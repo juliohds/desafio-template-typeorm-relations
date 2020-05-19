@@ -1,4 +1,4 @@
-import { inject, injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 
 import AppError from '@shared/errors/AppError';
 
@@ -18,16 +18,34 @@ interface IRequest {
 }
 
 @injectable()
-class CreateProductService {
+class CreateOrderService {
   constructor(
+    @inject('OrdersRepository')
     private ordersRepository: IOrdersRepository,
+    @inject('ProductsRepository')
     private productsRepository: IProductsRepository,
+    @inject('CustomersRepository')
     private customersRepository: ICustomersRepository,
   ) {}
 
   public async execute({ customer_id, products }: IRequest): Promise<Order> {
-    // TODO
+    const customer = await this.customersRepository.findById(customer_id);
+
+    if (!customer) {
+      throw new AppError("Customer don't exists");
+    }
+
+    const productsWithPrice = await this.productsRepository.findAllById(
+      products,
+    );
+
+    const order = await this.ordersRepository.create({
+      customer,
+      products: productsWithPrice,
+    });
+
+    return order;
   }
 }
 
-export default CreateProductService;
+export default CreateOrderService;
